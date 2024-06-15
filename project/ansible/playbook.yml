@@ -1,8 +1,6 @@
-- name: Setup PostgreSQL and Node.js application
+- name: Setup PostgreSQL and Flask application
   hosts: all
   become: yes
-  vars_files:
-    - ../.env
   tasks:
     - name: Install dependencies
       apt:
@@ -31,7 +29,7 @@
     - name: Run DB server setup script
       command: bash /home/ubuntu/db_server_setup.sh
 
-- name: Setup Web Application
+- name: Setup Flask Application
   hosts: web
   become: yes
   tasks:
