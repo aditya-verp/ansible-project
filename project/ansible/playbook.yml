@@ -1,0 +1,49 @@
+- name: Setup PostgreSQL and Node.js application
+  hosts: all
+  become: yes
+  vars_files:
+    - ../.env
+  tasks:
+    - name: Install dependencies
+      apt:
+        update_cache: yes
+        name: "{{ item }}"
+        state: present
+      loop:
+        - git
+        - docker.io
+        - docker-compose
+
+- name: Setup PostgreSQL
+  hosts: db
+  become: yes
+  tasks:
+    - name: Copy .env file to DB server
+      copy:
+        src: ../.env
+        dest: /home/ubuntu/.env
+
+    - name: Copy DB server setup script to DB server
+      copy:
+        src: ../scripts/db_server_setup.sh
+        dest: /home/ubuntu/db_server_setup.sh
+
+    - name: Run DB server setup script
+      command: bash /home/ubuntu/db_server_setup.sh
+
+- name: Setup Web Application
+  hosts: web
+  become: yes
+  tasks:
+    - name: Copy .env file to web server
+      copy:
+        src: ../.env
+        dest: /home/ubuntu/.env
+
+    - name: Copy web server setup script to web server
+      copy:
+        src: ../scripts/web_server_setup.sh
+        dest: /home/ubuntu/web_server_setup.sh
+
+    - name: Run web server setup script
+      command: bash /home/ubuntu/web_server_setup.sh
