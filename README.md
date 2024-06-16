@@ -1,4 +1,4 @@
-# Ansible Project Dockerization
+# Ansible Project To Setup the flask App on Web Instance and Setup the PostgreSQL on Db Instance using Docker.
 
 This repository contains an Ansible project that will be Dockerized for easier deployment and management.
 
