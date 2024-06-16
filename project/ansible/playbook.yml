@@ -26,13 +26,6 @@
         owner: ubuntu
         group: ubuntu
 
-    - name: Create db directory
-      file:
-        path: /home/ubuntu/db
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-
     - name: Copy .env file
       copy:
         src: ../.env
@@ -62,10 +55,21 @@
         group: ubuntu
         mode: '0755'
 
-    - name: Copy DB Dockerfile
+    - name: Copy DB setup script
       copy:
-        src: ../db/Dockerfile
-        dest: /home/ubuntu/db/Dockerfile
+        src: ../scripts/db_setup.sh
+        dest: /home/ubuntu/db_setup.sh
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
+
+    - name: Run DB setup script
+      command: bash /home/ubuntu/db_setup.sh
+
+    - name: Ensure entrypoint.sh is executable
+      file:
+        path: /home/ubuntu/app/entrypoint.sh
+        mode: '0755'
         owner: ubuntu
         group: ubuntu
 
