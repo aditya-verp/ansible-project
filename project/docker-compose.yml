@@ -1,9 +1,0 @@
-version: '3.8'
-
-  web:
-    build: ./app
-    ports:
-      - "80:80"
-    env_file:
-      - .env
- 
