@@ -1,5 +1,0 @@
-DB_HOST=<private_ip_of_db_server>
-DB_USER=myuser
-DB_PASSWORD=mypassword
-DB_NAME=mydb
-DB_PORT=5432
