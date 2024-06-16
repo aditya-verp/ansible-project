@@ -1,23 +1,9 @@
 version: '3.8'
 
-services:
-  db:
-    build: ./db
-    environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-
   web:
     build: ./app
     ports:
       - "80:80"
     env_file:
       - .env
-    depends_on:
-      - db
-
-volumes:
-  postgres_data:
+ 
