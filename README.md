@@ -43,6 +43,9 @@ This repository contains an Ansible project that will be Dockerized for easier d
 
 3. **Access the Application:**
    - Once containers are running, access the application by navigating to `Externallt --> ALB DNS` OR ` Locally -> http//127.0.0.1:80` in your web browser.
+  
+   - ![image](https://github.com/aditya-verp/ansible-project/assets/124437522/5515e489-b7ec-49b9-a568-3182543315c8)
+
 
 ## Project Structure
 
