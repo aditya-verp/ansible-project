@@ -2,16 +2,20 @@
   hosts: all
   become: yes
   tasks:
-    - name: Install Docker
+    - name: Install Docker and Docker Compose
       apt:
-        update_cache: yes
-        name: docker.io
+        name:
+          - docker.io
+          - curl
         state: present
+        update_cache: yes
 
     - name: Install Docker Compose
-      apt:
-        name: docker-compose
-        state: present
+      shell: |
+        curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+        chmod +x /usr/local/bin/docker-compose
+      args:
+        creates: /usr/local/bin/docker-compose
 
     - name: Add ubuntu user to docker group
       user:
@@ -19,52 +23,65 @@
         groups: docker
         append: yes
 
-    - name: Create app directory
+    - name: Restart Docker
+      service:
+        name: docker
+        state: restarted
+
+    - name: Create necessary directories for app on web server
       file:
-        path: /home/ubuntu/app
+        path: "/home/ubuntu/app"
         state: directory
         owner: ubuntu
         group: ubuntu
+      when: inventory_hostname in groups['web']
 
-    - name: Copy .env file
+    - name: Create necessary directories for db on db server
+      file:
+        path: "/home/ubuntu/db"
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+      when: inventory_hostname in groups['db']
+
+    - name: Copy .env file to web server
       copy:
         src: ../.env
-        dest: /home/ubuntu/.env
+        dest: /home/ubuntu/app/.env
         owner: ubuntu
         group: ubuntu
+      when: inventory_hostname in groups['web']
 
-    - name: Copy docker-compose.yml
+    - name: Copy .env file to db server
       copy:
-        src: ../docker-compose.yml
-        dest: /home/ubuntu/docker-compose.yml
+        src: ../.env
+        dest: /home/ubuntu/db/.env
         owner: ubuntu
         group: ubuntu
+      when: inventory_hostname in groups['db']
 
-    - name: Copy Flask app Dockerfile
+    - name: Copy Flask app files to web server
       copy:
-        src: ../app/Dockerfile
-        dest: /home/ubuntu/app/Dockerfile
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         owner: ubuntu
         group: ubuntu
+      with_items:
+        - { src: "../app/docker-compose.yml", dest: "/home/ubuntu/app/docker-compose.yml" }
+        - { src: "../app/Dockerfile", dest: "/home/ubuntu/app/Dockerfile" }
+        - { src: "../app/", dest: "/home/ubuntu/app/" }
+      when: inventory_hostname in groups['web']
 
-    - name: Copy Flask app source code
+    - name: Copy DB files to db server
       copy:
-        src: ../app/
-        dest: /home/ubuntu/app/
+        src: "{{ item.src }}"
+        dest: "{{ item.dest }}"
         owner: ubuntu
         group: ubuntu
-        mode: '0755'
-
-    - name: Copy DB setup script
-      copy:
-        src: ../scripts/db_setup.sh
-        dest: /home/ubuntu/db_setup.sh
-        owner: ubuntu
-        group: ubuntu
-        mode: '0755'
-
-    - name: Run DB setup script
-      command: bash /home/ubuntu/db_setup.sh
+      with_items:
+        - { src: "../db/docker-compose.yml", dest: "/home/ubuntu/db/docker-compose.yml" }
+        - { src: "../db/Dockerfile", dest: "/home/ubuntu/db/Dockerfile" }
+      when: inventory_hostname in groups['db']
 
     - name: Ensure entrypoint.sh is executable
       file:
@@ -72,8 +89,16 @@
         mode: '0755'
         owner: ubuntu
         group: ubuntu
+      when: inventory_hostname in groups['web']
 
-    - name: Build and start containers
+    - name: Build and start DB container
       shell: docker-compose up --build -d
       args:
-        chdir: /home/ubuntu
+        chdir: /home/ubuntu/db
+      when: inventory_hostname in groups['db']
+
+    - name: Build and start App container
+      shell: docker-compose up --build -d
+      args:
+        chdir: /home/ubuntu/app
+      when: inventory_hostname in groups['web']
