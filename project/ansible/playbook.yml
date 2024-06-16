@@ -1,47 +1,75 @@
-- name: Setup PostgreSQL and Flask application
+- name: Setup and deploy Flask application with PostgreSQL
   hosts: all
   become: yes
   tasks:
-    - name: Install dependencies
+    - name: Install Docker
       apt:
         update_cache: yes
-        name: "{{ item }}"
+        name: docker.io
         state: present
-      loop:
-        - git
-        - docker.io
-        - docker-compose
 
-- name: Setup PostgreSQL
-  hosts: db
-  become: yes
-  tasks:
-    - name: Copy .env file to DB server
+    - name: Install Docker Compose
+      apt:
+        name: docker-compose
+        state: present
+
+    - name: Add ubuntu user to docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Create app directory
+      file:
+        path: /home/ubuntu/app
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Create db directory
+      file:
+        path: /home/ubuntu/db
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Copy .env file
       copy:
         src: ../.env
         dest: /home/ubuntu/.env
+        owner: ubuntu
+        group: ubuntu
 
-    - name: Copy DB server setup script to DB server
+    - name: Copy docker-compose.yml
       copy:
-        src: ../scripts/db_server_setup.sh
-        dest: /home/ubuntu/db_server_setup.sh
+        src: ../docker-compose.yml
+        dest: /home/ubuntu/docker-compose.yml
+        owner: ubuntu
+        group: ubuntu
 
-    - name: Run DB server setup script
-      command: bash /home/ubuntu/db_server_setup.sh
-
-- name: Setup Flask Application
-  hosts: web
-  become: yes
-  tasks:
-    - name: Copy .env file to web server
+    - name: Copy Flask app Dockerfile
       copy:
-        src: ../.env
-        dest: /home/ubuntu/.env
+        src: ../app/Dockerfile
+        dest: /home/ubuntu/app/Dockerfile
+        owner: ubuntu
+        group: ubuntu
 
-    - name: Copy web server setup script to web server
+    - name: Copy Flask app source code
       copy:
-        src: ../scripts/web_server_setup.sh
-        dest: /home/ubuntu/web_server_setup.sh
+        src: ../app/
+        dest: /home/ubuntu/app/
+        owner: ubuntu
+        group: ubuntu
+        mode: '0755'
 
-    - name: Run web server setup script
-      command: bash /home/ubuntu/web_server_setup.sh
+    - name: Copy DB Dockerfile
+      copy:
+        src: ../db/Dockerfile
+        dest: /home/ubuntu/db/Dockerfile
+        owner: ubuntu
+        group: ubuntu
+
+    - name: Build and start containers
+      shell: docker-compose up --build -d
+      args:
+        chdir: /home/ubuntu
